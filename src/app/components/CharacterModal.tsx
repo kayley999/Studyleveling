@@ -47,17 +47,14 @@ export function CharacterModal({ isOpen, onClose, characterImage, characterName 
         <div className="flex flex-col items-center gap-6">
           <div className="relative">
             <div className="absolute inset-0 bg-cyan-500 rounded-full blur-xl opacity-50 animate-pulse"></div>
-            <div className="relative w-64 h-64 rounded-full border-4 border-cyan-400/50 overflow-hidden bg-transparent">
+            <div className="relative w-64 h-64 rounded-full border-4 border-cyan-400/50 overflow-hidden bg-slate-900 flex items-center justify-center">
               <img
                 src={characterImage}
                 alt={characterName}
-                className="w-full h-full object-contain"
-                style={{
-                  imageRendering: 'pixelated'
-                }}
+                className="w-full h-full object-cover"
               />
             </div>
-            {/* Pixel grid overlay effect */}
+            {/* Pixel grid overlay */}
             <div 
               className="absolute inset-0 rounded-full pointer-events-none"
               style={{

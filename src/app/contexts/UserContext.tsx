@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import supabase from '../../supabaseClient';
 
@@ -10,6 +10,7 @@ export interface UserProfile {
   field_of_study: string;
   xp: number;
   level: number;
+  tasks_completed: number;
 }
 
 interface UserContextType {
@@ -17,17 +18,21 @@ interface UserContextType {
   profile: UserProfile | null;
   loading: boolean;
   updateProfile: (updates: Partial<Omit<UserProfile, 'id' | 'email'>>) => Promise<void>;
-  addXP: (xpGained: number) => Promise<void>;
+  addXP: (xpGained: number) => Promise<{ newXp: number; newLevel: number }>;
   refreshProfile: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
+function calcLevel(xp: number): number {
+  return Math.floor(xp / 500) + 1;
+}
+
 export function UserProvider({ children, session }: { children: ReactNode; session: Session | null }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string, email: string | null) => {
+  const fetchProfile = useCallback(async (userId: string, email: string | null) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -35,28 +40,31 @@ export function UserProvider({ children, session }: { children: ReactNode; sessi
         .eq('id', userId)
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error && error.code !== 'PGRST116') {
+        console.error('fetchProfile error:', error);
+      }
 
       if (data) {
         setProfile({ ...data, email });
       } else {
-        // Profile doesn't exist yet (e.g., OAuth first login before completing setup)
+        // No profile row yet — build a local stub so UI works
         setProfile({
           id: userId,
           email,
-          name: '',
+          name: email?.split('@')[0] || 'Hunter',
           degree: '',
           field_of_study: '',
           xp: 0,
           level: 1,
+          tasks_completed: 0,
         });
       }
     } catch (err) {
-      console.error('Error fetching profile:', err);
+      console.error('fetchProfile exception:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (session?.user) {
@@ -65,41 +73,54 @@ export function UserProvider({ children, session }: { children: ReactNode; sessi
       setProfile(null);
       setLoading(false);
     }
-  }, [session]);
+  }, [session, fetchProfile]);
 
-  const updateProfile = async (updates: Partial<Omit<UserProfile, 'id' | 'email'>>) => {
-    if (!profile) return;
-    const { error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', profile.id);
-
-    if (!error) {
-      setProfile(prev => prev ? { ...prev, ...updates } : null);
-    }
-  };
-
-  const addXP = async (xpGained: number) => {
-    if (!profile) return;
-    const newXp = profile.xp + xpGained;
-    const newLevel = Math.floor(newXp / 500) + 1; // 500 XP per level
-    await updateProfile({ xp: newXp, level: newLevel });
-  };
-
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (!session?.user) return;
     await fetchProfile(session.user.id, session.user.email ?? null);
-  };
+  }, [session, fetchProfile]);
+
+  const updateProfile = useCallback(async (updates: Partial<Omit<UserProfile, 'id' | 'email'>>) => {
+    if (!profile) return;
+
+    // Optimistic local update first (so UI reacts instantly)
+    setProfile(prev => prev ? { ...prev, ...updates } : null);
+
+    // Use UPSERT so it works even if the row doesn't exist yet
+    const { error } = await supabase
+      .from('profiles')
+      .upsert({
+        id: profile.id,
+        name: profile.name,
+        degree: profile.degree,
+        field_of_study: profile.field_of_study,
+        xp: profile.xp,
+        level: profile.level,
+        tasks_completed: profile.tasks_completed ?? 0,
+        ...updates,
+      });
+
+    if (error) {
+      console.error('updateProfile error:', error);
+      // Revert optimistic update on error
+      await refreshProfile();
+    }
+  }, [profile, refreshProfile]);
+
+  const addXP = useCallback(async (xpGained: number): Promise<{ newXp: number; newLevel: number }> => {
+    if (!profile) return { newXp: 0, newLevel: 1 };
+
+    const newXp = profile.xp + xpGained;
+    const newLevel = calcLevel(newXp);
+    const newTasksCompleted = (profile.tasks_completed ?? 0) + 1;
+
+    await updateProfile({ xp: newXp, level: newLevel, tasks_completed: newTasksCompleted });
+
+    return { newXp, newLevel };
+  }, [profile, updateProfile]);
 
   return (
-    <UserContext.Provider value={{
-      user: session?.user ?? null,
-      profile,
-      loading,
-      updateProfile,
-      addXP,
-      refreshProfile,
-    }}>
+    <UserContext.Provider value={{ user: session?.user ?? null, profile, loading, updateProfile, addXP, refreshProfile }}>
       {children}
     </UserContext.Provider>
   );

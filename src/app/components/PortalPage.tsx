@@ -50,6 +50,45 @@ export function PortalPage() {
           </div>
         </div>
 
+        {/* Moodle Integration Demo Banner */}
+        <div className="mb-3 flex justify-center px-8">
+          <div className="relative w-full">
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-indigo-500/20 blur-xl"></div>
+            <div
+              className="relative w-full bg-gradient-to-br from-indigo-900/80 to-slate-900/90 backdrop-blur-sm border-2 border-indigo-400/50 hover:border-indigo-400 overflow-hidden transition-all duration-300 hover:shadow-[0_0_30px_rgba(99,102,241,0.4)]"
+              style={{ clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))' }}
+            >
+              <div className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-indigo-400/60"></div>
+              <div className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-indigo-400/60"></div>
+              <div className="relative px-6 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="relative flex-shrink-0">
+                    <div className="absolute inset-0 bg-indigo-500 blur-lg opacity-40 rounded-full"></div>
+                    <div className="relative w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-lg">
+                      <div className="w-7 h-7 bg-[#006DAE] rounded flex items-center justify-center">
+                        <span className="text-white text-xs font-black">M</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <p className="text-white font-bold">Moodle Integration — LIVE DEMO</p>
+                      <span className="text-[10px] bg-green-500/20 text-green-400 border border-green-400/30 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">New</span>
+                    </div>
+                    <p className="text-indigo-300 text-sm">Submit a real Moodle-style quiz and watch your XP update instantly on the leaderboard</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate('/demo-moodle')}
+                  className="flex-shrink-0 flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white font-bold px-5 py-2.5 rounded-lg text-sm transition-all shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:shadow-[0_0_30px_rgba(99,102,241,0.6)]"
+                >
+                  Open Moodle Demo →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Daily Challenges Banner */}
         <div className="mb-4 flex justify-center px-8">
           <div className="relative w-full">
